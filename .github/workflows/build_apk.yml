@@ -42,10 +42,24 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Show Flutter & Dart versions
+        run: |
+          flutter --version
+          dart --version
+          java -version
+
       - name: Build Universal Release APK
-        run: flutter build apk --release --no-tree-shake-icons --verbose
+        run: flutter build apk --release --no-tree-shake-icons --verbose 2>&1 | tee build_output.txt; exit ${PIPESTATUS[0]}
+
+      - name: Upload Build Log (always, for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build_output.txt
 
       - name: Upload Release APK Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: whisper-chat-release-apk
