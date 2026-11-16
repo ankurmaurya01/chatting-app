@@ -28,6 +28,14 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Create local.properties
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
+          echo "flutter.versionCode=1" >> android/local.properties
+          echo "flutter.versionName=1.0.0" >> android/local.properties
+          cat android/local.properties
+
       - name: Make Gradle Wrapper Executable
         run: chmod +x android/gradlew
 
@@ -35,7 +43,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Universal Release APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --verbose
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
