@@ -72,21 +72,18 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    // Trigger Phone OTP dispatch
-    final success = await authProvider.sendMobileOtp(_mobileController.text.trim());
+    // Direct Signup (No OTP required)
+    final success = await authProvider.register(
+      username: _usernameController.text.trim(),
+      fullName: _fullNameController.text.trim(),
+      mobile: _mobileController.text.trim(),
+      email: _emailController.text.trim(),
+      dob: _selectedDob!,
+      password: _passwordController.text,
+    );
+
     if (success && mounted) {
-      Navigator.pushNamed(
-        context,
-        AppRoutes.otp,
-        arguments: {
-          'username': _usernameController.text.trim(),
-          'fullName': _fullNameController.text.trim(),
-          'mobile': _mobileController.text.trim(),
-          'email': _emailController.text.trim(),
-          'dob': _selectedDob!,
-          'password': _passwordController.text,
-        },
-      );
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.chats, (route) => false);
     }
   }
 

@@ -64,7 +64,7 @@ class AuthService {
     );
   }
 
-  // 5. Complete Registration
+  // 5. Complete Direct Registration (No OTP required)
   Future<UserModel> registerUser({
     required String username,
     required String fullName,
@@ -72,8 +72,8 @@ class AuthService {
     required String email,
     required DateTime dob,
     required String password,
-    required String verificationId,
-    required String smsCode,
+    String? verificationId,
+    String? smsCode,
   }) async {
     final cleanUsername = username.toLowerCase().trim();
     final cleanEmail = email.toLowerCase().trim();
@@ -93,13 +93,7 @@ class AuthService {
       throw Exception("This email address is already registered.");
     }
 
-    // 1. Verify SMS OTP credential
-    PhoneAuthCredential phoneCredential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: smsCode,
-    );
-
-    // 2. Create User with Email and Password
+    // Create User with Email and Password directly
     UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
       email: cleanEmail,
       password: password,
@@ -110,17 +104,23 @@ class AuthService {
       throw Exception("User creation failed. Please try again.");
     }
 
-    // 3. Link Phone Credential to confirm verified mobile number
-    try {
-      await user.linkWithCredential(phoneCredential);
-    } catch (_) {
-      // If direct linking is restricted by tenant settings, proceed as verified
+    // Optional phone credential linking if OTP was provided
+    if (verificationId != null && smsCode != null && verificationId.isNotEmpty && smsCode.isNotEmpty) {
+      try {
+        PhoneAuthCredential phoneCredential = PhoneAuthProvider.credential(
+          verificationId: verificationId,
+          smsCode: smsCode,
+        );
+        await user.linkWithCredential(phoneCredential);
+      } catch (_) {}
     }
 
-    // 4. Send email verification link
-    await user.sendEmailVerification();
+    // Send email verification link
+    try {
+      await user.sendEmailVerification();
+    } catch (_) {}
 
-    // 5. Create user model
+    // Create user model
     final userModel = UserModel(
       id: user.uid,
       username: cleanUsername,
@@ -134,7 +134,7 @@ class AuthService {
       lastSeen: DateTime.now(),
     );
 
-    // 6. Write to Firestore in batch (users + usernames)
+    // Write to Firestore in batch (users + usernames)
     final batch = _firestore.batch();
     batch.set(_firestore.collection(AppConstants.usersCollection).doc(user.uid), userModel.toMap());
     batch.set(_firestore.collection(AppConstants.usernamesCollection).doc(cleanUsername), {

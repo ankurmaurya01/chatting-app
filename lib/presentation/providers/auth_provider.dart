@@ -89,7 +89,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // 2. Complete Signup
+  // 2. Direct Signup (No OTP required)
   Future<bool> register({
     required String username,
     required String fullName,
@@ -97,14 +97,8 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required DateTime dob,
     required String password,
-    required String smsCode,
+    String? smsCode,
   }) async {
-    if (_verificationId == null) {
-      _errorMessage = "Mobile verification expired. Please request OTP again.";
-      notifyListeners();
-      return false;
-    }
-
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -117,7 +111,7 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         dob: dob,
         password: password,
-        verificationId: _verificationId!,
+        verificationId: _verificationId,
         smsCode: smsCode,
       );
 
