@@ -24,7 +24,7 @@ class AuthService {
     final cleanMobile = mobile.replaceAll(RegExp(r'[\s\-\(\)]'), '');
     final query = await _firestore
         .collection(AppConstants.usersCollection)
-        .where('mobile', '==', cleanMobile)
+        .where('mobile', isEqualTo: cleanMobile)
         .limit(1)
         .get();
     return query.docs.isNotEmpty;
@@ -35,7 +35,7 @@ class AuthService {
     final cleanEmail = email.toLowerCase().trim();
     final query = await _firestore
         .collection(AppConstants.usersCollection)
-        .where('email', '==', cleanEmail)
+        .where('email', isEqualTo: cleanEmail)
         .limit(1)
         .get();
     return query.docs.isNotEmpty;
@@ -175,7 +175,7 @@ class AuthService {
         // Check if identifier is a mobile number
         final query = await _firestore
             .collection(AppConstants.usersCollection)
-            .where('mobile', '==', cleanIdentifier)
+            .where('mobile', isEqualTo: cleanIdentifier)
             .limit(1)
             .get();
 

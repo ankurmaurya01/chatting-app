@@ -69,7 +69,7 @@ class UserService {
     // 2. Exact match by Mobile
     final mobileQuery = await _firestore
         .collection(AppConstants.usersCollection)
-        .where('mobile', '==', clean)
+        .where('mobile', isEqualTo: clean)
         .limit(5)
         .get();
 
@@ -82,7 +82,7 @@ class UserService {
     // 3. Exact match by Email
     final emailQuery = await _firestore
         .collection(AppConstants.usersCollection)
-        .where('email', '==', cleanLower)
+        .where('email', isEqualTo: cleanLower)
         .limit(5)
         .get();
 

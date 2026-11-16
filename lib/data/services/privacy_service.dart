@@ -34,7 +34,7 @@ class PrivacyService {
   Stream<List<String>> getBlockedUserIdsStream(String blockerId) {
     return _firestore
         .collection(AppConstants.userBlocksCollection)
-        .where('blockerId', '==', blockerId)
+        .where('blockerId', isEqualTo: blockerId)
         .snapshots()
         .map((snap) => snap.docs.map((doc) => doc.data()['blockedId'] as String).toList());
   }
