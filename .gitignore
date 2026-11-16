@@ -1,0 +1,4 @@
+
+# Release binaries
+release-apk/
+*.apk
