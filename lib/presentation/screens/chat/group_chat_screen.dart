@@ -329,7 +329,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 height: 250,
                 child: EmojiPicker(
                   textEditingController: _inputController,
-                  config: const Config(height: 250, checkPlatformCompatibility: true),
                 ),
               ),
           ],
