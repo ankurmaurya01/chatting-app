@@ -34,7 +34,10 @@ class GroupModel {
   factory GroupModel.fromMap(Map<String, dynamic> map, String docId) {
     DateTime parseTime(dynamic val) {
       if (val is Timestamp) return val.toDate();
-      if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+      if (val is String) {
+        final parsed = DateTime.tryParse(val);
+        if (parsed != null) return parsed;
+      }
       return DateTime.now();
     }
 

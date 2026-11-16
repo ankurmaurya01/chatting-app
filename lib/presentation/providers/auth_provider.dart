@@ -16,7 +16,6 @@ class AuthProvider extends ChangeNotifier {
   // Phone OTP Flow State
   String? _verificationId;
   bool _isOtpSent = false;
-  int? _resendToken;
 
   AuthStatus get status => _status;
   UserModel? get currentUser => _currentUser;

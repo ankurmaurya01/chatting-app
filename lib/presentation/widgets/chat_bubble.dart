@@ -28,7 +28,6 @@ class ChatBubble extends StatelessWidget {
       case MessageStatus.delivered:
         return const Icon(Icons.done_all_rounded, size: 15, color: Colors.white70);
       case MessageStatus.sent:
-      default:
         return const Icon(Icons.done_rounded, size: 15, color: Colors.white70);
     }
   }

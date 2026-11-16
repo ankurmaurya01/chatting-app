@@ -102,7 +102,10 @@ class UserModel {
   factory UserModel.fromMap(Map<String, dynamic> map, String docId) {
     DateTime parseTimestamp(dynamic val) {
       if (val is Timestamp) return val.toDate();
-      if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+      if (val is String) {
+        final parsed = DateTime.tryParse(val);
+        if (parsed != null) return parsed;
+      }
       return DateTime.now();
     }
 
