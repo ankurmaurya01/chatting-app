@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isConversationParticipant(conversationData) {
+      return isAuthenticated() && (request.auth.uid in conversationData.participantIds);
+    }
+
+    function isGroupMember(groupId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+    }
+
+    // 1. Users collection: Read by authenticated users (for contact discovery), Write only by owner
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if false; // User accounts must be deactivated via auth logic
+    }
+
+    // 2. Usernames registry for uniqueness enforcement
+    match /usernames/{username} {
+      allow read: if isAuthenticated();
+      // Username creation must match the authenticated UID
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+
+    // 3. Conversations collection: 1-on-1 and Group chats metadata
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.participantIds);
+      allow create: if isAuthenticated() && (request.auth.uid in request.resource.data.participantIds);
+      allow update: if isAuthenticated() && (request.auth.uid in resource.data.participantIds);
+      allow delete: if false; // Deletion is managed per-user soft-delete or archiving
+
+      // Nested Messages subcollection
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && 
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+
+        allow create: if isAuthenticated() && 
+          request.resource.data.senderId == request.auth.uid &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+
+        // Editing or deleting messages
+        allow update: if isAuthenticated() && (
+          // Sender editing message content or setting delete for everyone
+          (resource.data.senderId == request.auth.uid) ||
+          // Recipient updating read receipts / delivery status / reactions / star status
+          (request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds)
+        );
+
+        allow delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid);
+      }
+    }
+
+    // 4. Groups collection
+    match /groups/{groupId} {
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.memberIds);
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAuthenticated() && (request.auth.uid in resource.data.adminIds);
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+
+      match /members/{memberId} {
+        allow read: if isAuthenticated() && 
+          request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+        allow write: if isAuthenticated() && (
+          request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.adminIds ||
+          request.auth.uid == memberId
+        );
+      }
+    }
+
+    // 5. User Blocks collection
+    match /userBlocks/{blockId} {
+      allow read: if isAuthenticated() && (resource.data.blockerId == request.auth.uid || resource.data.blockedId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.blockerId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.blockerId == request.auth.uid;
+    }
+
+    // 6. User Reports collection (write-only for filing complaints)
+    match /userReports/{reportId} {
+      allow create: if isAuthenticated() && request.resource.data.reporterId == request.auth.uid;
+      allow read, update, delete: if false; // Pure user reporting without client tampering
+    }
+
+    // 7. Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.recipientId == request.auth.uid;
+    }
+
+    // 8. App Settings collection (global client configuration, read-only to app)
+    match /appSettings/{document} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+  }
+}
